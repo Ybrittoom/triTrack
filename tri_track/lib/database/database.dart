@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tri_track/database/treino_crud.dart';
 
 class AppDatabase {
@@ -23,7 +23,6 @@ class AppDatabase {
   }
 
   Future<void> _createDatabase(Database db, int version) async {
-    // Para cada tabela no banco, precisa chamar uma linha dessas:
     await db.execute(TreinoCrud.createTableDDL);
   }
 }
