@@ -12,10 +12,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, Map<String, dynamic>> estatisticas = {};
   bool carregando = true;
 
+  // CORRIGIDO: Agora com o 'ã' correto para bater com o banco de dados
   static const modalidades = [
     {'tipo': 'Corrida', 'icone': Icons.directions_run, 'cor': Colors.orange},
     {'tipo': 'Ciclismo', 'icone': Icons.directions_bike, 'cor': Colors.green},
-    {'tipo': 'Nataçao', 'icone': Icons.pool, 'cor': Colors.blue},
+    {'tipo': 'Natação', 'icone': Icons.pool, 'cor': Colors.blue},
   ];
 
   @override
@@ -29,23 +30,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final Map<String, Map<String, dynamic>> dados = {};
     for (final m in modalidades) {
-      dados[m['tipo'] as String] =
-          await TreinoCrud.estatisticasPorTipo(m['tipo'] as String);
+      final nomeTipo = m['tipo'] as String; // CORRIGIDO: Forçando o Dart a entender como String
+      dados[nomeTipo] = await TreinoCrud.estatisticasPorTipo(nomeTipo);
     }
 
     setState(() {
       estatisticas = dados;
       carregando = false;
     });
-  }
-
-  String _formatarTempo(dynamic minutos) {
-    if (minutos == null) return '0min';
-    final total = (minutos as num).toInt();
-    final h = total ~/ 60;
-    final m = total % 60;
-    if (h == 0) return '${m}min';
-    return '${h}h${m.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -61,28 +53,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(16),
               child: ListView(
                 children: modalidades.map((m) {
-                  final stat = estatisticas[m['tipo']] ?? {};
-                  final total = (stat['total'] as num?)?.toInt() ?? 0;
-                  final km = (stat['totalKm'] as num?)?.toStringAsFixed(1) ?? '0.0';
-                  final tempo = _formatarTempo(stat['totalMinutos']);
-                  final media = (stat['mediaKm'] as num?)?.toStringAsFixed(1) ?? '0.0';
-                  final cor = m['cor'] as Color;
+                  final tipo = m['tipo'] as String;
                   final icone = m['icone'] as IconData;
+                  final cor = m['cor'] as Color;
+                  final dados = estatisticas[tipo] ?? {'total': 0, 'km': '0.00', 'tempo': '0min', 'media': '0.00'};
 
-                  return Card(
-                    elevation: 3,
+                  final total = dados['total'];
+                  final km = dados['km'];
+                  final tempo = dados['tempo'];
+                  final media = dados['media'];
+
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Icon(icone, color: cor, size: 28),
-                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: cor.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(icone, color: cor, size: 24),
+                              ),
+                              const SizedBox(width: 12),
                               Text(
-                                m['tipo'] as String,
+                                tipo,
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -90,15 +94,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              Chip(label: Text('$total treino${total != 1 ? 's' : ''}')),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$total treino${total != 1 ? 's' : ''}',
+                                  style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          const Divider(height: 20),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(height: 1, color: Color(0xFFF5F5F5)),
+                          ),
                           Row(
                             children: [
-                              _StatCol(label: 'Total km', valor: km),
-                              _StatCol(label: 'Tempo total', valor: tempo),
-                              _StatCol(label: 'Média km', valor: media),
+                              _StatCol(label: 'TOTAL KM', valor: '$km km'),
+                              _StatCol(label: 'TEMPO TOTAL', valor: '$tempo'),
+                              _StatCol(label: 'MÉDIA KM', valor: '$media km'),
                             ],
                           ),
                         ],
@@ -114,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 class _StatCol extends StatelessWidget {
   final String label;
-  final String valor;
+  final String valor; // Garanta que o tipo aqui seja String!
 
   const _StatCol({required this.label, required this.valor});
 
@@ -123,8 +144,24 @@ class _StatCol extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(valor, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+          Text(
+            valor, 
+            style: const TextStyle(
+              fontWeight: FontWeight.w900, 
+              fontSize: 16, 
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label, 
+            style: TextStyle(
+              color: Colors.grey[400], 
+              fontSize: 10, 
+              fontWeight: FontWeight.bold, 
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );

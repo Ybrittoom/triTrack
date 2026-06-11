@@ -51,7 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
       tipo: tipoSelecionado,
       distancia: distancia,
       duracao: duracao,
-      observacao: observacaoController.text.isEmpty ? null : observacaoController.text,
+      observacao: observacaoController.text.isEmpty
+          ? null
+          : observacaoController.text,
     );
 
     await TreinoCrud.insert(treino);
@@ -66,9 +68,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void limpar() async {
     distanciaController.clear();
     duracaoController.clear();
-    observacaoController.clear(); 
+    observacaoController.clear();
 
-    await TreinoCrud.delete(resultado?.id??0);
+    await TreinoCrud.delete(resultado?.id ?? 0);
 
     setState(() {
       resultado = null;
@@ -92,79 +94,107 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('TriTrack'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            const Text(
-              'Modalidade',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            TipoSelector(
-              tipoSelecionado: tipoSelecionado,
-              onTipoChanged: (tipo) => setState(() => tipoSelecionado = tipo),
-            ),
-            const SizedBox(height: 16),
-            TreinoInput(
-              label: 'Distância (km)',
-              controller: distanciaController,
-              icon: Icons.straighten,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-            const SizedBox(height: 12),
-            TreinoInput(
-              label: 'Duração (minutos)',
-              controller: duracaoController,
-              icon: Icons.timer,
-            ),
-            const SizedBox(height: 12),
-            TreinoInput(
-              label: 'Observação (opcional)',
-              controller: observacaoController,
-              icon: Icons.notes,
-              keyboardType: TextInputType.text,
-            ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('TriTrack'),
+      centerTitle: true,
+    ),
+    body: Padding(
+      padding: const EdgeInsets.all(16),
+      child: ListView(
+        children: [
+          const Text(
+            'Registrar Atividade',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+          ),
+          const SizedBox(height: 16),
+          
+          // O Seletor de modalidades que tinha sumido!
+          TipoSelector(
+            tipoSelecionado: tipoSelecionado,
+            onTipoChanged: (tipo) => setState(() => tipoSelecionado = tipo),
+          ),
+          const SizedBox(height: 16),
+          
+          // Os inputs de dados que tinham sumido!
+          TreinoInput(
+            label: 'Distância (km)',
+            controller: distanciaController,
+            icon: Icons.straighten,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 12),
+          TreinoInput(
+            label: 'Duração (minutos)',
+            controller: duracaoController,
+            icon: Icons.timer,
+          ),
+          const SizedBox(height: 12),
+          TreinoInput(
+            label: 'Observação (opcional)',
+            controller: observacaoController,
+            icon: Icons.notes,
+            keyboardType: TextInputType.text,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Botões modernos alinhados lado a lado
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: registrar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text('Registrar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: limpar,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[700],
+                    side: BorderSide(color: Colors.grey[300]!),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 20),
+                  label: const Text('Limpar', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          if (resultado != null) ...[
+            CardTreino(treino: resultado!),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: registrar,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Registrar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: limpar,
-                    icon: const Icon(Icons.delete_sweep),
-                    label: const Text('Limpar tudo'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (resultado != null) CardTreino(treino: resultado!),
-            const Text(
-              'Histórico de Treinos',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...historico.map((item) => CardTreino(
-                  treino: item,
-                  onDelete: () => deletarItem(item),
-                )),
           ],
-        ),
+          
+          const Text(
+            'Histórico de Treinos',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+          ),
+          const SizedBox(height: 14),
+          
+          // Lista do histórico abaixo dos botões
+          ...historico.map((item) => CardTreino(
+                treino: item,
+                onDelete: () => deletarItem(item),
+              )),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
