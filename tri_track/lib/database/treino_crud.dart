@@ -48,18 +48,21 @@ class TreinoCrud {
   // CORRIGIDO: Modificado de 'distanciaKm'/'duracaoMinutos' para 'distancia'/'duracao'
   static Future<Map<String, dynamic>> estatisticasPorTipo(String tipo) async {
     final db = await AppDatabase.instance.database;
-    
+
     // Normaliza para lidar com a correção do til de "Natação"
     final tipoBusca = tipo.contains('Nata') ? 'Natação' : tipo;
 
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT 
         COUNT(*) as total,
         SUM(distancia) as km,
         SUM(duracao) as tempo
       FROM treino 
       WHERE tipo = ? OR tipo = 'Nataçao'
-    ''', [tipoBusca]);
+    ''',
+      [tipoBusca],
+    );
 
     if (result.isEmpty || result.first['total'] == 0) {
       return {'total': 0, 'km': '0.00', 'tempo': '0min', 'media': '0.00'};
@@ -73,7 +76,9 @@ class TreinoCrud {
     // Formata o tempo de forma elegante usando o seu TreinoService
     final h = tempo ~/ 60;
     final m = tempo % 60;
-    final tempoFormatado = h == 0 ? '${m}min' : '${h}h${m.toString().padLeft(2, '0')}';
+    final tempoFormatado = h == 0
+        ? '${m}min'
+        : '${h}h${m.toString().padLeft(2, '0')}';
 
     return {
       'total': total,
@@ -81,5 +86,62 @@ class TreinoCrud {
       'tempo': tempoFormatado,
       'media': media.toStringAsFixed(2),
     };
+  }
+
+  static Future<Map<String, dynamic>> evolucaoSemanal(String tipo) async {
+    final db = await AppDatabase.instance.database;
+
+    final hoje = DateTime.now();
+    final inicioSemana = hoje.subtract(Duration(days: hoje.weekday - 1));
+
+    final treinos = await listByTipo(tipo);
+
+    double kmSemana = 0;
+    int tempoSemana = 0;
+
+    for (final treino in treinos) {
+      final data = DateTime.parse(
+        treino.data
+            .replaceAll(RegExp(r' - .*'), '')
+            .split('/')
+            .reversed
+            .join('-'),
+      );
+
+      if (data.isAfter(inicioSemana.subtract(const Duration(days: 1)))) {
+        kmSemana += treino.distancia;
+        tempoSemana += treino.duracao;
+      }
+    }
+
+    return {'km': kmSemana, 'tempo': tempoSemana};
+  }
+
+  static Future<Map<String, dynamic>> evolucaoMensal(String tipo) async {
+    final db = await AppDatabase.instance.database;
+
+    final hoje = DateTime.now();
+
+    final treinos = await listByTipo(tipo);
+
+    double kmMes = 0;
+    int tempoMes = 0;
+
+    for (final treino in treinos) {
+      final data = DateTime.parse(
+        treino.data
+            .replaceAll(RegExp(r' - .*'), '')
+            .split('/')
+            .reversed
+            .join('-'),
+      );
+
+      if (data.month == hoje.month && data.year == hoje.year) {
+        kmMes += treino.distancia;
+        tempoMes += treino.duracao;
+      }
+    }
+
+    return {'km': kmMes, 'tempo': tempoMes};
   }
 }

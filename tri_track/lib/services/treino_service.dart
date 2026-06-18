@@ -12,7 +12,7 @@ class TreinoService {
       tipo: tipo,
       distancia: distancia,
       duracao: duracao,
-      data: DateFormat('dd/MM/yyyy - HH:mm:ss', 'pt_BR').format(DateTime.now()),
+      data: DateTime.now().toIso8601String(),
       observacao: observacao,
     );
   }
